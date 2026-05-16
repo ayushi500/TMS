@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const alertSchema = mongoose.Schema(
   {
+    deviceId: {
+      type: String,
+      default: null,
+    },
+
     message: String,
 
     severity: {

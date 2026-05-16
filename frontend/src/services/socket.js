@@ -1,5 +1,10 @@
-import { io } from 'socket.io-client'
+import { io } from "socket.io-client";
 
-const socket = io('http://localhost:5000')
+const URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
-export default socket
+const socket = io(URL, {
+  autoConnect: true,
+  reconnectionAttempts: 5,
+});
+
+export default socket;

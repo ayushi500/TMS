@@ -5,8 +5,12 @@ import SensorData from "../models/SensorData.js";
 import Alert from "../models/Alert.js";
 import Log from "../models/Log.js";
 
+let mqttClient = null;
+
+export const getMQTTClient = () => mqttClient;
+
 const setupMQTT = (io) => {
-  const client = mqtt.connect({
+  mqttClient = mqtt.connect({
     host: process.env.MQTT_HOST,
     port: process.env.MQTT_PORT,
     protocol: "mqtts",
@@ -14,55 +18,68 @@ const setupMQTT = (io) => {
     password: process.env.MQTT_PASSWORD,
   });
 
-  client.on("connect", () => {
+  mqttClient.on("connect", () => {
     console.log("MQTT Connected");
-
-    client.subscribe("iot/sensor");
-    client.subscribe("iot/status");
+    mqttClient.subscribe("iot/sensor");
+    mqttClient.subscribe("iot/status");
   });
 
-  client.on("message", async (topic, message) => {
-    const data = JSON.parse(message.toString());
+  mqttClient.on("error", (err) => {
+    console.error("MQTT Error:", err.message);
+  });
 
-    if (topic === "iot/sensor") {
-      const sensor = await SensorData.create({
-        deviceId: data.deviceId,
-        temperature: data.temperature,
-        humidity: data.humidity,
-      });
+  mqttClient.on("message", async (topic, message) => {
+    try {
+      const data = JSON.parse(message.toString());
 
-      io.emit("sensorUpdate", sensor);
-
-      if (data.temperature > 40) {
-        const alert = await Alert.create({
-          message: "High Temperature Detected",
-          severity: "high",
+      if (topic === "iot/sensor") {
+        const sensor = await SensorData.create({
+          deviceId: data.deviceId,
+          temperature: data.temperature,
+          humidity: data.humidity,
         });
 
-        io.emit("alert", alert);
+        io.emit("sensorUpdate", sensor);
+
+        if (data.temperature > 40) {
+          const alert = await Alert.create({
+            deviceId: data.deviceId,
+            message: `High Temperature Detected on device ${data.deviceId}`,
+            severity: "high",
+          });
+
+          io.emit("alert", alert);
+        }
       }
-    }
 
-    if (topic === "iot/status") {
-      const device = await Device.findByIdAndUpdate(
-        data.deviceId,
-        {
-          status: data.status,
-          lastSeen: new Date(),
-        },
-        { new: true }
-      );
+      if (topic === "iot/status") {
+        const device = await Device.findOneAndUpdate(
+          { deviceId: data.deviceId },
+          {
+            status: data.status,
+            lastSeen: new Date(),
+          },
+          { new: true }
+        );
 
-      io.emit("deviceStatus", device);
+        if (!device) {
+          console.warn(`Device not found: ${data.deviceId}`);
+          return;
+        }
 
-      await Log.create({
-        deviceId: data.deviceId,
-        action: `Device ${data.status}`,
-      });
+        io.emit("deviceStatus", device);
+
+        await Log.create({
+          deviceId: data.deviceId,
+          action: `Device ${data.status}`,
+        });
+      }
+    } catch (err) {
+      console.error("MQTT message handling error:", err.message);
     }
   });
 
-  return client;
+  return mqttClient;
 };
 
 export default setupMQTT;

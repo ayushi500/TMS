@@ -2,9 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import http from "http";
-import { Server } from "socket.io";
 
 import connectDB from "./config/db.js";
+import { initSocket } from "./config/socket.js";
 import setupMQTT from "./config/mqtt.js";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -19,7 +19,13 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -27,23 +33,22 @@ app.use("/api/devices", deviceRoutes);
 app.use("/api/sensors", sensorRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/logs", logRoutes);
-app.get('/', (req, res) => {
-  res.send('IoT TMS Backend Running 🚀')
-})
+
+app.get("/", (req, res) => {
+  res.send("IoT TMS Backend Running 🚀");
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err.message);
+  res.status(500).json({ message: "Internal server error" });
+});
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
+const io = initSocket(server);
 
 setupMQTT(io);
-
-io.on("connection", (socket) => {
-  console.log("Client Connected");
-});
 
 const PORT = process.env.PORT || 5000;
 

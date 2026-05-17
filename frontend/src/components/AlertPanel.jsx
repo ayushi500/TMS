@@ -7,15 +7,12 @@ export default function AlertPanel({ alerts }) {
         {alerts.length === 0 ? (
           <p className='text-slate-400'>No alerts</p>
         ) : (
-          alerts.map((alert, index) => (
+          alerts.map((alert) => (
             <div
-              key={index}
+              key={alert._id}
               className='bg-red-500/20 border border-red-500 p-3 rounded-lg'
             >
-              <p className='font-semibold'>
-                {alert.message}
-              </p>
-
+              <p className='font-semibold'>{alert.message}</p>
               <span className='text-sm text-slate-300'>
                 Severity: {alert.severity}
               </span>

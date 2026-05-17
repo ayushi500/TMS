@@ -15,27 +15,24 @@ export default function Register() {
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    })
+    setForm({ ...form, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
     try {
       setLoading(true)
       setError('')
-
       await registerUser(form)
-
       navigate('/')
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Registration failed'
-      )
+      setError(err.response?.data?.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -82,9 +79,10 @@ export default function Register() {
           <input
             type='password'
             name='password'
-            placeholder='Password'
+            placeholder='Password (min 6 characters)'
             value={form.password}
             onChange={handleChange}
+            minLength={6}
             className='w-full bg-slate-800 border border-slate-700 p-3 rounded-lg outline-none'
             required
           />
@@ -92,7 +90,7 @@ export default function Register() {
           <button
             type='submit'
             disabled={loading}
-            className='w-full bg-green-600 hover:bg-green-700 transition p-3 rounded-lg font-semibold'
+            className='w-full bg-green-600 hover:bg-green-700 transition p-3 rounded-lg font-semibold disabled:opacity-50'
           >
             {loading ? 'Creating Account...' : 'Register'}
           </button>
@@ -100,10 +98,7 @@ export default function Register() {
 
         <p className='text-center text-slate-400 mt-6'>
           Already have an account?{' '}
-          <Link
-            to='/'
-            className='text-blue-400 hover:underline'
-          >
+          <Link to='/' className='text-blue-400 hover:underline'>
             Login
           </Link>
         </p>

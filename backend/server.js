@@ -15,13 +15,24 @@ import logRoutes from "./routes/logRoutes.js";
 
 dotenv.config();
 
+// Fail fast if required env vars are missing
+const requiredEnv = ["MONGO_URI", "JWT_SECRET", "MQTT_HOST"];
+for (const key of requiredEnv) {
+  if (!process.env[key]) {
+    console.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
 connectDB();
 
 const app = express();
 
+const ALLOWED_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    origin: ALLOWED_ORIGIN,
     credentials: true,
   })
 );
@@ -38,7 +49,7 @@ app.get("/", (req, res) => {
   res.send("IoT TMS Backend Running 🚀");
 });
 
-// Global error handler
+// Global error handler — must be after all routes
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err.message);
   res.status(500).json({ message: "Internal server error" });
@@ -46,7 +57,8 @@ app.use((err, req, res, next) => {
 
 const server = http.createServer(app);
 
-const io = initSocket(server);
+// Pass the same origin to socket so CORS stays in sync
+const io = initSocket(server, ALLOWED_ORIGIN);
 
 setupMQTT(io);
 

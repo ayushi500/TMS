@@ -2,11 +2,24 @@ import mongoose from "mongoose";
 
 const deviceSchema = mongoose.Schema(
   {
-    name: String,
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    deviceId: String,
+    deviceId: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
 
-    type: String,
+    type: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     status: {
       type: String,

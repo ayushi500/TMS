@@ -2,10 +2,10 @@ import { Server } from "socket.io";
 
 let io = null;
 
-export const initSocket = (server) => {
+export const initSocket = (server, allowedOrigin) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+      origin: allowedOrigin || "http://localhost:5173",
       methods: ["GET", "POST"],
     },
   });

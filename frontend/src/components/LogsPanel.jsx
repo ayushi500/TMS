@@ -7,13 +7,12 @@ export default function LogsPanel({ logs }) {
         {logs.length === 0 ? (
           <p className='text-slate-400'>No logs</p>
         ) : (
-          logs.map((log, index) => (
+          logs.map((log) => (
             <div
-              key={index}
+              key={log._id}
               className='bg-slate-800 p-3 rounded-lg'
             >
               <p>{log.action}</p>
-
               <span className='text-xs text-slate-400'>
                 {new Date(log.createdAt).toLocaleString()}
               </span>
